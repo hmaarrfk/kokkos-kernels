@@ -535,9 +535,19 @@ cmake $COMPILER_CMD  -DCMAKE_CXX_FLAGS="${KOKKOS_CXXFLAGS//\"}" -DCMAKE_EXE_LINK
 make install -j 4
 
 # KokkosKernels
-KOKKOS_FIND_PATH=${KOKKOS_INSTALL_PATH}/lib/cmake/Kokkos
-#echo "KOKKOKS_FIND_PATH = ${KOKKOS_FIND_PATH}"
-#echo "STORE_KOKKOSKERNELS_BUILD_PATH  = ${STORE_KOKKOSKERNELS_BUILD_PATH}"
+KOKKOS_FIND_PATH=
+if [ -d ${KOKKOS_INSTALL_PATH}/lib/cmake/Kokkos ]; then
+  KOKKOS_FIND_PATH=${KOKKOS_INSTALL_PATH}/lib/cmake/Kokkos
+elif [ -d ${KOKKOS_INSTALL_PATH}/lib64/cmake/Kokkos ]; then
+  KOKKOS_FIND_PATH=${KOKKOS_INSTALL_PATH}/lib64/cmake/Kokkos
+else
+  echo "Error: Kokkos install did not yield kokkos-install/lib/cmake/Kokkos or kokkos-install/lib64/cmake/Kokkos"
+  exit
+fi
+
+echo "KOKKOS_INSTALL_PATH = ${KOKKOS_INSTALL_PATH}"
+echo "KOKKOKS_FIND_PATH = ${KOKKOS_FIND_PATH}"
+echo "STORE_KOKKOSKERNELS_BUILD_PATH  = ${STORE_KOKKOSKERNELS_BUILD_PATH}"
 
 #echo "KOKKOS_INSTALL_PATH: ${KOKKOS_INSTALL_PATH}"
 cd $STORE_KOKKOSKERNELS_BUILD_PATH
