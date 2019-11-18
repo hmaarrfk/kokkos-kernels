@@ -79,6 +79,14 @@ MACRO(GLOBAL_SET VARNAME)
   SET(${VARNAME} ${ARGN} CACHE INTERNAL "")
 ENDMACRO()
 
+FUNCTION(GLOBAL_APPEND VARNAME)
+#We make this a function since we are setting variables
+#and want to use scope to avoid overwriting local variables
+SET(TEMP ${${VARNAME}})
+LIST(APPEND TEMP ${ARGN})
+GLOBAL_SET(${VARNAME} ${TEMP})
+ENDFUNCTION()
+
 FUNCTION(VERIFY_EMPTY CONTEXT)
 IF(${ARGN})
  MESSAGE(FATAL_ERROR "Kokkos does not support all of Tribits. Unhandled arguments in ${CONTEXT}:\n${ARGN}")

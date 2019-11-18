@@ -56,7 +56,7 @@ INCLUDE(cmake/kokkoskernels_tribits.cmake)
 
 #This will collect imported TPLs we need to export
 #in our config file
-GLOBAL_SET(KOKKOS_TPL_EXPORTS)
+GLOBAL_SET(KOKKOSKERNELS_TPL_EXPORTS)
 
 #
 # Define the package
