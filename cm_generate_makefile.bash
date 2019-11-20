@@ -259,12 +259,13 @@ display_help_text() {
       echo "--with-hpx-options=[OPT]:     Additional options to HPX:"
       echo "                                enable_async_dispatch"
       echo "--gcc-toolchain=/Path/To/GccRoot:  Set the gcc toolchain to use with clang (e.g. /usr)" 
-      echo "--kokkos-make-j=[NUM]:        Set parallel level for kokkos install"
-      echo "                                -j flag"
+      echo "--kokkos-make-j=[NUM]:        Set -j parallel level for kokkos install"
+      echo "                                Default: j == 4"
 
 }
 
 KOKKOS_DO_EXAMPLES=OFF
+KOKKOS_MAKEINSTALL_J=4
 
 while [[ $# > 0 ]]
 do
@@ -548,8 +549,7 @@ echo cmake $COMPILER_CMD  -DCMAKE_CXX_FLAGS="${KOKKOS_CXXFLAGS}" -DCMAKE_EXE_LIN
 cmake $COMPILER_CMD  -DCMAKE_CXX_FLAGS="${KOKKOS_CXXFLAGS//\"}" -DCMAKE_EXE_LINKER_FLAGS="${KOKKOS_LDFLAGS//\"}" -DCMAKE_INSTALL_PREFIX=${KOKKOS_INSTALL_PATH} ${KOKKOS_DEVICE_CMD} ${KOKKOS_ARCH_CMD} -DKokkos_ENABLE_TESTS=ON -DKokkos_ENABLE_EXAMPLES=${KOKKOS_DO_EXAMPLES} ${KOKKOS_OPTION_CMD} ${KOKKOS_CUDA_OPTION_CMD} -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_CXX_EXTENSIONS=OFF ${STANDARD_CMD} ${KOKKOS_DEBUG_CMD} ${KOKKOS_PATH} 
 
 # Install kokkos library
-make install -j 4 
-#make install - $KOKKOS_MAKEINSTALL_J
+make install -j $KOKKOS_MAKEINSTALL_J
 
 # Replacing Kokkos_DIR with Kokkos_ROOT may resolve need for this check...
 KOKKOS_FIND_PATH=
