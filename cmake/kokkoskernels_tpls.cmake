@@ -185,11 +185,7 @@ MACRO(kokkoskernels_find_imported NAME)
   ENDIF()
 
   IF (NOT TPL_IMPORTED_NAME)
-    IF (TPL_INTERFACE)
-      SET(TPL_IMPORTED_NAME ${NAME})
-    ELSE()
-      SET(TPL_IMPORTED_NAME KokkosKernels::${NAME})
-    ENDIF()
+    SET(TPL_IMPORTED_NAME KokkosKernels::${NAME})
   ENDIF()
 
   SET(${NAME}_INCLUDE_DIRS)
