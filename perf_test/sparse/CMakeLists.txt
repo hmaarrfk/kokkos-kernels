@@ -27,3 +27,13 @@ KOKKOSKERNELS_ADD_EXECUTABLE(
   sparse_sptrsv
   SOURCES KokkosSparse_sptrsv.cpp 
   )
+
+KOKKOSKERNELS_ADD_EXECUTABLE(
+  sparse_gs
+  SOURCES KokkosSparse_gs.cpp
+  )
+
+KOKKOSKERNELS_ADD_EXECUTABLE(
+  sparse_spiluk
+  SOURCES KokkosSparse_spiluk.cpp 
+  )
