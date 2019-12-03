@@ -93,15 +93,24 @@ void sequential_spmv(crsMat_t input_mat, x_vector_type x, y_vector_type y,
 
 template <typename crsMat_t, typename x_vector_type, typename y_vector_type>
 void check_spmv(crsMat_t input_mat, x_vector_type x, y_vector_type y,
-    typename y_vector_type::non_const_value_type alpha, typename y_vector_type::non_const_value_type beta){
+                typename y_vector_type::non_const_value_type alpha,
+                typename y_vector_type::non_const_value_type beta){
   //typedef typename crsMat_t::StaticCrsGraphType graph_t;
   typedef typename crsMat_t::execution_space ExecSpace;
   typedef Kokkos::RangePolicy<ExecSpace> my_exec_space;
 
-  typedef typename crsMat_t::values_type::non_const_type scalar_view_t;
-  typedef typename scalar_view_t::value_type ScalarA;
-  double eps = std::is_same<ScalarA,float>::value?2*1e-3:1e-7;
-  size_t nr = input_mat.numRows();
+  // y is the quantity being tested here,
+  // so let us use y_value_type to determine
+  // the appropriate tolerance precision.
+  using y_value_type  = typename y_vector_type::non_const_value_type;
+  using y_value_trait = Kokkos::ArithTraits<y_value_type>;
+  // Note on 2019-12-03 by LBV:
+  // one really want the following definition,
+  // const y_value_trait::mag_type eps = f(y_value_trait::eps());
+  // where f() introduces a fudge factor that accounts for
+  // rounding error and such...
+  const double eps = std::is_same<typename y_value_trait::mag_type, float>::value ? 2*1e-3 : 1e-7;
+  const size_t nr = input_mat.numRows();
   y_vector_type expected_y("expected", nr);
   Kokkos::deep_copy(expected_y, y);
   Kokkos::fence();
@@ -110,27 +119,35 @@ void check_spmv(crsMat_t input_mat, x_vector_type x, y_vector_type y,
   //KokkosKernels::Impl::print_1Dview(expected_y);
   KokkosSparse::spmv("N", alpha, input_mat, x, beta, y);
   //KokkosKernels::Impl::print_1Dview(y);
-  typedef Kokkos::Details::ArithTraits<typename y_vector_type::non_const_value_type> AT;
   int num_errors = 0;
-  Kokkos::parallel_reduce("KokkosSparse::Test::spmv"
-                         ,my_exec_space(0, y.extent(0))
-                         ,fSPMV<y_vector_type, y_vector_type, y_vector_type>(expected_y,y,eps)
-                         ,num_errors);
+  Kokkos::parallel_reduce("KokkosSparse::Test::spmv",
+                          my_exec_space(0, y.extent(0)),
+                          fSPMV<y_vector_type, y_vector_type, y_vector_type>(expected_y, y, eps),
+                          num_errors);
   if(num_errors>0) printf("KokkosSparse::Test::spmv: %i errors of %i with params: %lf %lf\n",
-      num_errors,y.extent_int(0),AT::abs(alpha),AT::abs(beta));
+                          num_errors, y.extent_int(0),
+                          y_value_trait::abs(alpha), y_value_trait::abs(beta));
   EXPECT_TRUE(num_errors==0);
 }
 
 template <typename crsMat_t, typename x_vector_type, typename y_vector_type>
 void check_spmv_mv(crsMat_t input_mat, x_vector_type x, y_vector_type y, y_vector_type expected_y,
-    typename y_vector_type::non_const_value_type alpha,
-    typename y_vector_type::non_const_value_type beta, int numMV){
-  typedef typename crsMat_t::execution_space ExecSpace;
-  typedef Kokkos::RangePolicy<ExecSpace> my_exec_space;
+                   typename y_vector_type::non_const_value_type alpha,
+                   typename y_vector_type::non_const_value_type beta, int numMV){
+  using ExecSpace = typename crsMat_t::execution_space;
+  using my_exec_space = Kokkos::RangePolicy<ExecSpace>;
 
-  typedef typename crsMat_t::values_type::non_const_type scalar_view_t;
-  typedef typename scalar_view_t::value_type ScalarA;
-  double eps = std::is_same<ScalarA,float>::value?2*1e-3:1e-7;
+  // y is the quantity being tested here,
+  // so let us use y_value_type to determine
+  // the appropriate tolerance precision.
+  using y_value_type  = typename y_vector_type::non_const_value_type;
+  using y_value_trait = Kokkos::ArithTraits<y_value_type>;
+  // Note on 2019-12-03 by LBV:
+  // one really want the following definition,
+  // const y_value_trait::mag_type eps = f(y_value_trait::eps());
+  // where f() introduces a fudge factor that accounts for
+  // rounding error and such...
+  const double eps = std::is_same<typename y_value_trait::mag_type, float>::value ? 2*1e-3 : 1e-7;
 
   Kokkos::deep_copy(expected_y, y);
 
@@ -149,12 +166,12 @@ void check_spmv_mv(crsMat_t input_mat, x_vector_type x, y_vector_type y, y_vecto
 
     auto y_spmv = Kokkos::subview (y, Kokkos::ALL (), i);
     int num_errors = 0;
-    Kokkos::parallel_reduce("KokkosSparse::Test::spmv_mv"
-                           ,my_exec_space(0,y_i.extent(0))
-                           ,fSPMV<decltype(y_i), decltype(y_spmv), y_vector_type>(y_i, y_spmv, eps)
-                           ,num_errors);
+    Kokkos::parallel_reduce("KokkosSparse::Test::spmv_mv",
+                            my_exec_space(0,y_i.extent(0)),
+                            fSPMV<decltype(y_i), decltype(y_spmv), y_vector_type>(y_i, y_spmv, eps),
+                            num_errors);
     if(num_errors>0) printf("KokkosSparse::Test::spmv_mv: %i errors of %i for mv %i\n",
-        num_errors,y_i.extent_int(0),i);
+                            num_errors, y_i.extent_int(0), i);
     EXPECT_TRUE(num_errors==0);
   }
 }
@@ -170,12 +187,20 @@ void check_spmv_mv(crsMat_t input_mat, x_vector_type x, y_vector_type y, y_vecto
                          typename y_vector_type::non_const_value_type alpha,
                          typename y_vector_type::non_const_value_type beta) {
     using ExecSpace     = typename crsMat_t::execution_space;
-    using scalar_view_t = typename crsMat_t::values_type::non_const_type;
-    using ScalarA       = typename scalar_view_t::value_type;
     using my_exec_space = Kokkos::RangePolicy<ExecSpace>;
 
-    double eps = std::is_same<ScalarA,float>::value?2*1e-3:1e-7;
-    size_t nr = input_mat.numRows();
+    // y is the quantity being tested here,
+    // so let us use y_value_type to determine
+    // the appropriate tolerance precision.
+    using y_value_type  = typename y_vector_type::non_const_value_type;
+    using y_value_trait = Kokkos::ArithTraits<y_value_type>;
+    // Note on 2019-12-03 by LBV:
+    // one really want the following definition,
+    // const y_value_trait::mag_type eps = f(y_value_trait::eps());
+    // where f() introduces a fudge factor that accounts for
+    // rounding error and such...
+    const double eps = std::is_same<typename y_value_trait::mag_type, float>::value ? 2*1e-3 : 1e-7;
+    const size_t nr = input_mat.numRows();
     y_vector_type expected_y("expected", nr);
     Kokkos::deep_copy(expected_y, y);
     Kokkos::fence();
@@ -189,9 +214,9 @@ void check_spmv_mv(crsMat_t input_mat, x_vector_type x, y_vector_type y, y_vecto
                             my_exec_space(0, y.extent(0)),
                             fSPMV<y_vector_type, y_vector_type, y_vector_type>(expected_y,y,eps),
                             num_errors);
-    typedef Kokkos::Details::ArithTraits<typename y_vector_type::non_const_value_type> AT;
     if(num_errors>0) printf("KokkosKernels::UnitTests::spmv_struct: %i errors of %i with params: %d %lf %lf\n",
-                            num_errors, y.extent_int(0), stencil_type, AT::abs(alpha), AT::abs(beta));
+                            num_errors, y.extent_int(0), stencil_type,
+                            y_value_trait::abs(alpha), y_value_trait::abs(beta));
     EXPECT_TRUE(num_errors==0);
   }
 
@@ -208,11 +233,19 @@ void check_spmv_mv(crsMat_t input_mat, x_vector_type x, y_vector_type y, y_vecto
                             typename y_vector_type::non_const_value_type beta,
                             int numMV) {
     typedef typename crsMat_t::execution_space ExecSpace;
-    typedef typename crsMat_t::values_type::non_const_type scalar_view_t;
-    typedef typename scalar_view_t::value_type ScalarA;
     typedef Kokkos::RangePolicy<ExecSpace> my_exec_space;
 
-    double eps = std::is_same<ScalarA,float>::value?2*1e-3:1e-7;
+    // y is the quantity being tested here,
+    // so let us use y_value_type to determine
+    // the appropriate tolerance precision.
+    using y_value_type  = typename y_vector_type::non_const_value_type;
+    using y_value_trait = Kokkos::ArithTraits<y_value_type>;
+    // Note on 2019-12-03 by LBV:
+    // one really want the following definition,
+    // const y_value_trait::mag_type eps = f(y_value_trait::eps());
+    // where f() introduces a fudge factor that accounts for
+    // rounding error and such...
+    const double eps = std::is_same<typename y_value_trait::mag_type, float>::value ? 2*1e-3 : 1e-7;
     Kokkos::deep_copy(expected_y, y);
     Kokkos::fence();
 
@@ -232,9 +265,9 @@ void check_spmv_mv(crsMat_t input_mat, x_vector_type x, y_vector_type y, y_vecto
                               my_exec_space(0, y.extent(0)),
                               fSPMV<decltype(y_i), decltype(y_spmv), y_vector_type>(y_i,y_spmv,eps),
                               num_errors);
-      typedef Kokkos::Details::ArithTraits<typename y_vector_type::non_const_value_type> AT;
       if(num_errors>0) printf("KokkosKernels::UnitTests::spmv_mv_struct: %i errors of %i with params: %d %lf %lf, in vector %i\n",
-                              num_errors, y.extent_int(0), stencil_type, AT::abs(alpha), AT::abs(beta), vectorIdx);
+                              num_errors, y.extent_int(0), stencil_type,
+                              y_value_trait::abs(alpha), y_value_trait::abs(beta), vectorIdx);
       EXPECT_TRUE(num_errors==0);
     }
   }
