@@ -34,7 +34,7 @@ struct fSPMV {
   void operator()( const int i, value_type& err ) const {
     if(AT::abs(expected_y(i)-y(i))>eps) {
       err++;
-      printf("expected_y(%d)=%f, y(%d)=%f\n", i, AT::abs(expected_y(i)), i, AT::abs(y(i)));
+      //printf("expected_y(%d)=%f, y(%d)=%f\n", i, AT::abs(expected_y(i)), i, AT::abs(y(i)));
     }
   }
 };
@@ -109,7 +109,7 @@ void check_spmv(crsMat_t input_mat, x_vector_type x, y_vector_type y,
   // const y_value_trait::mag_type eps = f(y_value_trait::eps());
   // where f() introduces a fudge factor that accounts for
   // rounding error and such...
-  const double eps = std::is_same<typename y_value_trait::mag_type, float>::value ? 2*1e-3 : 1e-7;
+  const double eps = 1000*y_value_trait::eps();
   const size_t nr = input_mat.numRows();
   y_vector_type expected_y("expected", nr);
   Kokkos::deep_copy(expected_y, y);
@@ -147,7 +147,7 @@ void check_spmv_mv(crsMat_t input_mat, x_vector_type x, y_vector_type y, y_vecto
   // const y_value_trait::mag_type eps = f(y_value_trait::eps());
   // where f() introduces a fudge factor that accounts for
   // rounding error and such...
-  const double eps = std::is_same<typename y_value_trait::mag_type, float>::value ? 2*1e-3 : 1e-7;
+  const double eps = 1000*y_value_trait::eps();
 
   Kokkos::deep_copy(expected_y, y);
 
@@ -199,7 +199,7 @@ void check_spmv_mv(crsMat_t input_mat, x_vector_type x, y_vector_type y, y_vecto
     // const y_value_trait::mag_type eps = f(y_value_trait::eps());
     // where f() introduces a fudge factor that accounts for
     // rounding error and such...
-    const double eps = std::is_same<typename y_value_trait::mag_type, float>::value ? 2*1e-3 : 1e-7;
+    const double eps = 1000*y_value_trait::eps();
     const size_t nr = input_mat.numRows();
     y_vector_type expected_y("expected", nr);
     Kokkos::deep_copy(expected_y, y);
@@ -245,7 +245,7 @@ void check_spmv_mv(crsMat_t input_mat, x_vector_type x, y_vector_type y, y_vecto
     // const y_value_trait::mag_type eps = f(y_value_trait::eps());
     // where f() introduces a fudge factor that accounts for
     // rounding error and such...
-    const double eps = std::is_same<typename y_value_trait::mag_type, float>::value ? 2*1e-3 : 1e-7;
+    const double eps = 1000*y_value_trait::eps();
     Kokkos::deep_copy(expected_y, y);
     Kokkos::fence();
 
